@@ -8,93 +8,101 @@ use Illuminate\Http\Request;
 class CategoryController extends Controller
 {
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
-        $this->middleware('auth');
+        // $this->middleware('auth');
     }
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index()
     {
-        $categories = Category::select(['title']);
-
-        dd($categories);
-        return $categories;
+        $categories = Category::select('title')->get();
+        // dd($categories);
+        return view('categories.index',compact('categories'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         return view('categories.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'title' => ['required','max:255','unique:categories,title']
+        ]);
+
+        $category = Category::create(['title' => $request->title ]);
+
+        if ($category->title) {
+            return redirect()->route('categories.index')->with([
+                'status' => 'success',
+                'msg' => 'Category added successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Category $category)
+    public function show($title)
     {
-        $snippets = $category->snippets();
-        return view('categories.show',compact('snippets'));
+        $category = Category::where('title',$title)->first();
+        if (!$category) {
+            abort(404);
+        }
+        $snippets = $category->snippets->where('status',1);
+        // dd($snippets->first());
+        return view('categories.show',compact('category','snippets'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Category $category)
+    public function edit($title)
     {
-        return view('categories.edit');
-
+        $category = Category::where('title',$title)->first();
+        return view('categories.edit',compact('category'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Category $category)
+    public function update(Request $request,$title)
     {
-        //
+
+        $request->validate([
+            'title' => ['required','max:255','unique:categories,title']
+        ]);
+        $category = Category::where('title',$title)->first();
+
+        $category = $category->update(['title' => $request->title ]);
+
+        // dd($category);
+        if ($category) {
+            return redirect()->route('categories.index')->with([
+                'status' => 'success',
+                'msg' => 'Category updated successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Category $category)
+    public function destroy($title)
     {
-        //
+        $category = Category::where('title',$title)->first();
+
+        $category = $category->delete();
+
+        if ($category) {
+            return redirect()->route('categories.index')->with([
+                'status' => 'success',
+                'msg' => 'Category deleted successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 }

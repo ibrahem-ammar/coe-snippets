@@ -8,88 +8,101 @@ use Illuminate\Http\Request;
 class TagController extends Controller
 {
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
-        $this->middleware('auth');
+        // $this->middleware('auth');
     }
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index()
     {
-        //
+        $tags = Tag::select('title')->get();
+        // dd($tags);
+        return view('tags.index',compact('tags'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
-        //
+        return view('tags.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'title' => ['required','max:255','unique:tags,title']
+        ]);
+
+        $tag = Tag::create(['title' => $request->title ]);
+
+        if ($tag->title) {
+            return redirect()->route('tags.index')->with([
+                'status' => 'success',
+                'msg' => 'tag added successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Tag  $tag
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Tag $tag)
+    public function show($title)
     {
-        //
+        $tag = Tag::where('title',$title)->first();
+        if (!$tag) {
+            abort(404);
+        }
+        $snippets = $tag->snippets->where('status',1);
+        // dd($snippets->first());
+        return view('tags.show',compact('tag','snippets'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Tag  $tag
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Tag $tag)
+    public function edit($title)
     {
-        //
+        $tag = Tag::where('title',$title)->first();
+        return view('tags.edit',compact('tag'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Tag  $tag
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Tag $tag)
+    public function update(Request $request,$title)
     {
-        //
+
+        $request->validate([
+            'title' => ['required','max:255','unique:tags,title']
+        ]);
+        $tag = Tag::where('title',$title)->first();
+
+        $tag = $tag->update(['title' => $request->title ]);
+
+        // dd($tag);
+        if ($tag) {
+            return redirect()->route('tags.index')->with([
+                'status' => 'success',
+                'msg' => 'tag updated successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Tag  $tag
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Tag $tag)
+    public function destroy($title)
     {
-        //
+        $tag = Tag::where('title',$title)->first();
+
+        $tag = $tag->delete();
+
+        if ($tag) {
+            return redirect()->route('tags.index')->with([
+                'status' => 'success',
+                'msg' => 'tag deleted successfully'
+            ]);
+        }else {
+            return redirect()->back()->withInput()->with([
+                'status' => 'danger',
+                'msg' => 'something wrong happened'
+            ]);
+        }
     }
 }
